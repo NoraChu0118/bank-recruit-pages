@@ -520,9 +520,9 @@ async function loadData() {
       throw new Error('fetch failed');
     }
   } catch (e) {
-    // Fallback: try the CloudStudio data endpoint
+    // Fallback: try GitHub Pages data endpoint
     try {
-      const res2 = await fetch('https://83c04e28a69d47c085349ab64f1c4f57.app.codebuddy.work/data.json?t=' + Date.now());
+      const res2 = await fetch('https://norachu0118.github.io/bank-recruit-pages/data.json?t=' + Date.now());
       if (res2.ok) {
         const json = await res2.json();
         newsData = json.news || [];
