@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>银行校招通</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+:root {
+  --bg: #f7f6f3; --card: #ffffff; --primary: #378add; --primary-light: #e6f1fb;
+  --text: #2c2c2a; --text-sub: #5f5e5a; --text-hint: #888780; --text-light: #b4b2a9;
+  --border: #e8e6df; --morandi-blue: #6b8eb2; --morandi-green: #7ba88a;
+  --morandi-purple: #9b8ec0; --morandi-orange: #c4956a; --morandi-red: #c2756e;
+  --radius: 12px; --radius-sm: 8px;
+}
+body { font-family: -apple-system, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; padding-bottom: 70px; overflow-x: hidden; }
+a { color: var(--primary); text-decoration: none; }
+
+.page { display: none; }
+.page.active { display: block; }
+
+/* Header */
+.header { position: sticky; top: 0; z-index: 100; background: var(--card); border-bottom: 0.5px solid var(--border); padding: 12px 16px; }
+.header-top { display: flex; align-items: center; justify-content: space-between; }
+.header-title { font-size: 18px; font-weight: 600; color: var(--text); }
+.header-date { font-size: 12px; color: var(--text-hint); }
+.header-badge { display: inline-block; background: #fcebeb; color: #c2756e; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+
+/* Filter */
+.filter-bar { display: flex; gap: 8px; padding: 12px 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.filter-bar::-webkit-scrollbar { display: none; }
+.filter-btn { flex-shrink: 0; padding: 6px 14px; border-radius: 16px; border: 1px solid var(--border); background: var(--card); font-size: 12px; color: var(--text-sub); cursor: pointer; transition: all .2s; }
+.filter-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.filter-btn .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+
+/* News Cards */
+.news-list { padding: 0 16px 16px; }
+.news-card { background: var(--card); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; border: 0.5px solid var(--border); transition: all .2s; }
+.news-card:active { transform: scale(0.98); }
+.news-card-header { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 10px; }
+.news-tag { flex-shrink: 0; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; color: #fff; }
+.tag-guoyou { background: var(--morandi-blue); }
+.tag-gufenzhi { background: var(--morandi-green); }
+.tag-chengshang { background: var(--morandi-purple); }
+.tag-cunzhen { background: var(--morandi-orange); }
+.tag-zhengce { background: #8b7db5; }
+.tag-nongshang { background: #7ba89a; }
+.tag-nongxin { background: #8aab7b; }
+.tag-waizi { background: #b5888e; }
+.news-bank { font-size: 15px; font-weight: 600; flex: 1; line-height: 1.4; }
+.news-deadline { flex-shrink: 0; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+.deadline-urgent { background: #fcebeb; color: #c2756e; }
+.deadline-soon { background: #faecda; color: #ba7517; }
+.deadline-ok { background: #eaf3de; color: #639922; }
+.news-info { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.news-info-item { font-size: 12px; color: var(--text-hint); }
+.news-info-item span { color: var(--text-sub); }
+.news-meta { display: flex; justify-content: space-between; align-items: center; }
+.news-location { font-size: 12px; color: var(--text-hint); }
+.news-link-btn { font-size: 12px; color: var(--primary); font-weight: 500; cursor: pointer; }
+
+/* Detail Modal */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; }
+.modal-overlay.show { display: block; }
+.modal { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); border-radius: 16px 16px 0 0; z-index: 201; max-height: 85vh; overflow-y: auto; transform: translateY(100%); transition: transform .3s ease; }
+.modal.show { transform: translateY(0); }
+.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 0.5px solid var(--border); position: sticky; top: 0; background: var(--card); z-index: 1; }
+.modal-header h3 { font-size: 16px; font-weight: 600; }
+.modal-close { width: 28px; height: 28px; border-radius: 50%; background: var(--bg); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; color: var(--text-hint); border: none; }
+.modal-body { padding: 20px; }
+.detail-row { display: flex; margin-bottom: 12px; font-size: 13px; }
+.detail-label { color: var(--text-hint); width: 72px; flex-shrink: 0; }
+.detail-value { color: var(--text); flex: 1; line-height: 1.6; }
+.detail-link { display: block; margin-top: 16px; padding: 12px; background: var(--primary); color: #fff; text-align: center; border-radius: var(--radius-sm); font-weight: 500; font-size: 14px; }
+
+/* Resume Page */
+.resume-container { padding: 16px; }
+.resume-section { background: var(--card); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; border: 0.5px solid var(--border); }
+.resume-section-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+.resume-section-title .icon { width: 20px; height: 20px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #fff; }
+.form-group { margin-bottom: 14px; }
+.form-group:last-child { margin-bottom: 0; }
+.form-label { font-size: 12px; color: var(--text-hint); margin-bottom: 4px; display: block; }
+.form-input, .form-select, .form-textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; color: var(--text); background: var(--bg); outline: none; transition: border .2s; font-family: inherit; }
+.form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--primary); }
+.form-textarea { min-height: 80px; resize: vertical; }
+.form-row { display: flex; gap: 10px; }
+.form-row .form-group { flex: 1; }
+.form-hint { font-size: 11px; color: var(--text-light); margin-top: 4px; }
+
+.upload-area { border: 1.5px dashed var(--border); border-radius: var(--radius-sm); padding: 24px; text-align: center; cursor: pointer; transition: all .2s; margin-top: 8px; }
+.upload-area:active { background: var(--primary-light); }
+.upload-area .upload-icon { font-size: 28px; color: var(--text-light); margin-bottom: 6px; }
+.upload-area .upload-text { font-size: 13px; color: var(--text-hint); }
+.upload-area .upload-hint { font-size: 11px; color: var(--text-light); margin-top: 4px; }
+.upload-file-info { margin-top: 10px; display: none; padding: 10px 12px; background: var(--primary-light); border-radius: var(--radius-sm); align-items: center; justify-content: space-between; }
+.upload-file-name { font-size: 13px; color: var(--primary); display: flex; align-items: center; gap: 4px; }
+.upload-delete-btn { flex-shrink: 0; padding: 4px 10px; background: #fcebeb; color: #c2756e; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; margin-left: 10px; }
+.upload-delete-btn:active { background: #f7c1c1; }
+.form-optional-tag { display: inline-block; font-size: 10px; color: var(--primary); background: var(--primary-light); padding: 1px 5px; border-radius: 3px; margin-left: 4px; vertical-align: middle; }
+
+/* AI Optimize */
+.ai-optimize-card { background: linear-gradient(135deg, #f0eeff, #e6f1fb); border-radius: var(--radius); padding: 20px; text-align: center; margin-bottom: 12px; border: 0.5px solid #cecbf6; }
+.ai-optimize-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+.ai-optimize-desc { font-size: 12px; color: var(--text-sub); margin-bottom: 14px; }
+.ai-optimize-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 28px; background: var(--primary); color: #fff; border-radius: 20px; font-size: 14px; font-weight: 500; border: none; cursor: pointer; transition: all .2s; }
+.ai-optimize-btn:active { transform: scale(0.96); }
+.ai-optimize-btn:disabled { background: var(--text-light); cursor: not-allowed; }
+.ai-free-count { font-size: 12px; color: var(--morandi-purple); margin-top: 10px; }
+.ai-free-count strong { font-size: 16px; }
+
+/* AI Result */
+.ai-result { background: var(--card); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; border: 0.5px solid var(--border); display: none; }
+.ai-result.show { display: block; }
+.ai-result-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.ai-result-badge { padding: 2px 8px; background: #eaf3de; color: #639922; border-radius: 4px; font-size: 11px; font-weight: 500; }
+.ai-result-score { font-size: 12px; color: var(--text-hint); }
+.ai-result-item { margin-bottom: 10px; padding: 10px 12px; background: var(--bg); border-radius: var(--radius-sm); border-left: 3px solid var(--primary); }
+.ai-result-item.issue { border-left-color: var(--morandi-orange); }
+.ai-result-item.good { border-left-color: #639922; }
+.ai-result-item-title { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+.ai-result-item-text { font-size: 12px; color: var(--text-sub); line-height: 1.6; }
+
+/* My Page */
+.profile-container { padding: 16px; }
+.profile-header { background: var(--card); border-radius: var(--radius); padding: 24px 16px; text-align: center; margin-bottom: 12px; border: 0.5px solid var(--border); }
+.profile-avatar { width: 56px; height: 56px; border-radius: 50%; background: var(--primary-light); display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; font-size: 24px; }
+.profile-name { font-size: 16px; font-weight: 600; }
+.profile-desc { font-size: 12px; color: var(--text-hint); margin-top: 4px; }
+
+.stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.stat-card { background: var(--card); border-radius: var(--radius-sm); padding: 14px 10px; text-align: center; border: 0.5px solid var(--border); }
+.stat-num { font-size: 22px; font-weight: 600; color: var(--primary); }
+.stat-label { font-size: 11px; color: var(--text-hint); margin-top: 2px; }
+
+.menu-card { background: var(--card); border-radius: var(--radius); margin-bottom: 12px; border: 0.5px solid var(--border); overflow: hidden; }
+.menu-item { display: flex; align-items: center; padding: 14px 16px; border-bottom: 0.5px solid var(--border); cursor: pointer; }
+.menu-item:last-child { border-bottom: none; }
+.menu-item:active { background: var(--bg); }
+.menu-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; margin-right: 12px; flex-shrink: 0; }
+.menu-text { flex: 1; font-size: 14px; }
+.menu-arrow { color: var(--text-light); font-size: 12px; }
+.menu-badge { background: #fcebeb; color: #c2756e; font-size: 11px; padding: 1px 6px; border-radius: 8px; margin-right: 8px; }
+
+.brand-card { background: var(--card); border-radius: var(--radius); padding: 20px; text-align: center; margin-bottom: 12px; border: 0.5px solid var(--border); }
+.brand-card .brand-icon { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; background: var(--primary); color: #fff; font-size: 14px; font-weight: 500; margin-bottom: 8px; }
+.brand-card .brand-name { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+.brand-card .brand-wechat { font-size: 13px; color: var(--text-sub); margin-top: 8px; }
+.brand-card .brand-slogan { font-size: 12px; color: var(--text-hint); margin-top: 4px; }
+
+/* Disclaimer */
+.disclaimer { background: #faf9f6; border-radius: var(--radius-sm); padding: 14px 16px; margin-top: 12px; border: 0.5px solid var(--border); }
+.disclaimer-title { font-size: 11px; font-weight: 600; color: var(--text-hint); margin-bottom: 6px; }
+.disclaimer-text { font-size: 10px; color: var(--text-light); line-height: 1.7; }
+
+/* Tab Bar */
+.tab-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 64px; background: var(--card); border-top: 0.5px solid var(--border); display: flex; z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
+.tab-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: color .2s; color: var(--text-hint); }
+.tab-item.active { color: var(--primary); }
+.tab-icon { font-size: 22px; margin-bottom: 2px; }
+.tab-label { font-size: 10px; }
+.tab-dot { position: absolute; top: 6px; right: 50%; margin-right: -16px; width: 6px; height: 6px; border-radius: 50%; background: #c2756e; }
+
+/* Toast */
+.toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(44,44,42,0.85); color: #fff; padding: 12px 24px; border-radius: 8px; font-size: 14px; z-index: 300; opacity: 0; transition: opacity .3s; pointer-events: none; }
+.toast.show { opacity: 1; }
+
+/* Empty state */
+.empty-state { text-align: center; padding: 40px 20px; color: var(--text-hint); }
+.empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.4; }
+.empty-state p { font-size: 13px; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 0; }
+
+.header-update { font-size: 11px; color: var(--primary); margin-top: 2px; display: flex; align-items: center; gap: 4px; }
+.header-update .dot-live { width: 6px; height: 6px; border-radius: 50%; background: #639922; animation: pulse 2s infinite; }
+.refresh-btn { padding: 4px 10px; border-radius: 12px; border: 1px solid var(--primary); background: transparent; color: var(--primary); font-size: 11px; cursor: pointer; }
+.refresh-btn:active { background: var(--primary-light); }
+
+/* Animations */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in { animation: fadeIn .3s ease; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+.loading { animation: pulse 1.5s infinite; }
+</style>
+</head>
+<body>
+
+<!-- Page: News -->
+<div id="pageNews" class="page active">
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <div class="header-title">银行校招通</div>
+        <div class="header-date" id="todayDate"></div>
+        <div class="header-update"><span class="dot-live"></span> <span id="lastUpdateTime">加载中...</span> <button class="refresh-btn" onclick="loadData()">刷新</button></div>
+      </div>
+      <div class="header-badge" id="urgentBadge"></div>
+    </div>
+  </div>
+  <div class="filter-bar" id="filterBar"></div>
+  <div class="news-list" id="newsList"></div>
+</div>
+
+<!-- Page: Resume -->
+<div id="pageResume" class="page">
+  <div class="header">
+    <div class="header-top">
+      <div class="header-title">简历中心</div>
+    </div>
+  </div>
+  <div class="resume-container">
+    <!-- AI Optimize Card -->
+    <div class="ai-optimize-card">
+      <div class="ai-optimize-title">AI 简历优化</div>
+      <div class="ai-optimize-desc">上传简历或填写信息，一键获取专业优化建议</div>
+      <button class="ai-optimize-btn" id="aiOptimizeBtn" onclick="startAIOptimize()">&#10024; 开始优化</button>
+      <div class="ai-free-count">今日剩余 <strong id="freeCount">3</strong> 次免费</div>
+    </div>
+
+    <!-- AI Result -->
+    <div class="ai-result" id="aiResult">
+      <div class="ai-result-header">
+        <span class="ai-result-badge">AI 分析完成</span>
+        <span class="ai-result-score" id="aiScore"></span>
+      </div>
+      <div id="aiResultContent"></div>
+    </div>
+
+    <!-- Upload -->
+    <div class="resume-section">
+      <div class="resume-section-title"><span class="icon" style="background:var(--morandi-blue);">1</span> 上传简历</div>
+      <div class="upload-area" id="uploadArea" onclick="document.getElementById('resumeFile').click()">
+        <div class="upload-icon">&#128196;</div>
+        <div class="upload-text">点击上传简历文件</div>
+        <div class="upload-hint">支持 PDF / Word，2MB 以内</div>
+      </div>
+      <input type="file" id="resumeFile" accept=".pdf,.doc,.docx" style="display:none" onchange="handleFileUpload(this)">
+      <div id="uploadedFileInfo" class="upload-file-info">
+        <span id="uploadedFileName" class="upload-file-name"></span>
+        <button class="upload-delete-btn" onclick="deleteUploadedFile()">&#10005; 删除</button>
+      </div>
+      <div class="form-hint" style="margin-top:8px;">上传简历后，下方信息全部变为选填，AI 将基于简历文件进行分析</div>
+    </div>
+
+    <!-- Basic Info -->
+    <div class="resume-section" id="sectionBasic">
+      <div class="resume-section-title"><span class="icon" style="background:var(--morandi-green);">2</span> 基本信息 <span class="form-optional-tag" id="tagBasic" style="display:none;">选填</span></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">姓名</label>
+          <input class="form-input" id="rName" placeholder="你的姓名">
+        </div>
+        <div class="form-group">
+          <label class="form-label">性别</label>
+          <select class="form-select" id="rGender">
+            <option value="">请选择</option>
+            <option value="男">男</option>
+            <option value="女">女</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">出生年月</label>
+          <input class="form-input" id="rBirth" type="month" placeholder="如 2003-06">
+        </div>
+        <div class="form-group">
+          <label class="form-label">手机号</label>
+          <input class="form-input" id="rPhone" type="tel" placeholder="11位手机号">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">邮箱</label>
+        <input class="form-input" id="rEmail" type="email" placeholder="常用邮箱">
+      </div>
+    </div>
+
+    <!-- Education -->
+    <div class="resume-section">
+      <div class="resume-section-title"><span class="icon" style="background:var(--morandi-purple);">3</span> 教育背景 <span class="form-optional-tag" id="tagEdu" style="display:none;">选填</span></div>
+      <div class="form-group">
+        <label class="form-label">学校</label>
+        <input class="form-input" id="rSchool" placeholder="如 XX大学">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">学历</label>
+          <select class="form-select" id="rDegree">
+            <option value="">请选择</option>
+            <option value="大专">大专</option>
+            <option value="本科">本科</option>
+            <option value="硕士">硕士</option>
+            <option value="博士">博士</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">专业</label>
+          <input class="form-input" id="rMajor" placeholder="如 金融学">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">入学时间</label>
+          <input class="form-input" id="rEduStart" type="month">
+        </div>
+        <div class="form-group">
+          <label class="form-label">毕业时间</label>
+          <input class="form-input" id="rEduEnd" type="month">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">GPA / 排名（选填）</label>
+        <input class="form-input" id="rGpa" placeholder="如 3.8/4.0 或 专业前10%">
+      </div>
+      <div class="form-group">
+        <label class="form-label">英语水平</label>
+        <select class="form-select" id="rEnglish">
+          <option value="">请选择</option>
+          <option value="CET-4">CET-4</option>
+          <option value="CET-6">CET-6</option>
+          <option value="IELTS">IELTS</option>
+          <option value="TOEFL">TOEFL</option>
+          <option value="专四">专四</option>
+          <option value="专八">专八</option>
+          <option value="其他">其他</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Internship -->
+    <div class="resume-section">
+      <div class="resume-section-title"><span class="icon" style="background:var(--morandi-orange);">4</span> 实习/项目经历 <span class="form-optional-tag" id="tagIntern" style="display:none;">选填</span></div>
+      <div class="form-group">
+        <label class="form-label">公司/机构名称</label>
+        <input class="form-input" id="rCompany" placeholder="如 XX银行XX分行">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">岗位/角色</label>
+          <input class="form-input" id="rPosition" placeholder="如 实习客户经理">
+        </div>
+        <div class="form-group">
+          <label class="form-label">时间</label>
+          <input class="form-input" id="rInternTime" placeholder="如 2025.07-2025.09">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">工作内容与成果</label>
+        <textarea class="form-textarea" id="rInternDesc" placeholder="描述你的具体工作内容、取得的成果，尽量用数据说话&#10;如：独立完成50+客户需求分析，促成3笔贷款业务签约"></textarea>
+      </div>
+    </div>
+
+    <!-- Skills -->
+    <div class="resume-section">
+      <div class="resume-section-title"><span class="icon" style="background:var(--morandi-red);">5</span> 技能与证书 <span class="form-optional-tag" id="tagSkills" style="display:none;">选填</span></div>
+      <div class="form-group">
+        <label class="form-label">专业技能</label>
+        <textarea class="form-textarea" id="rSkills" style="min-height:50px" placeholder="如：熟练使用Excel/Python数据分析，熟悉银行业务流程"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">证书与荣誉</label>
+        <textarea class="form-textarea" id="rCerts" style="min-height:50px" placeholder="如：银行从业资格证、奖学金、竞赛获奖等"></textarea>
+      </div>
+    </div>
+
+    <!-- Job Preference -->
+    <div class="resume-section">
+      <div class="resume-section-title"><span class="icon" style="background:#378add;">6</span> 求职意向 <span class="form-optional-tag" id="tagTarget" style="display:none;">选填</span></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">意向岗位</label>
+          <input class="form-input" id="rTargetPos" placeholder="如 柜员岗/客户经理/管培生">
+        </div>
+        <div class="form-group">
+          <label class="form-label">意向城市</label>
+          <input class="form-input" id="rTargetCity" placeholder="如 上海/杭州">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">银行类型偏好</label>
+        <select class="form-select" id="rBankType">
+          <option value="">不限</option>
+          <option value="政策性银行">政策性银行</option>
+          <option value="国有大行">国有大行</option>
+          <option value="股份制银行">股份制银行</option>
+          <option value="城商行">城商行</option>
+          <option value="农商行">农商行</option>
+          <option value="农信社">农信社</option>
+          <option value="村镇银行">村镇银行</option>
+          <option value="外资银行">外资银行</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Page: My -->
+<div id="pageMy" class="page">
+  <div class="header">
+    <div class="header-top">
+      <div class="header-title">我的</div>
+    </div>
+  </div>
+  <div class="profile-container">
+    <div class="profile-header">
+      <div class="profile-avatar">&#128100;</div>
+      <div class="profile-name">校招用户</div>
+      <div class="profile-desc">银行校招通 · 让每一次投递都更有准备</div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-num" id="statFree">3</div>
+        <div class="stat-label">免费优化次数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="statOptimized">0</div>
+        <div class="stat-label">已优化次数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="statNews">0</div>
+        <div class="stat-label">今日资讯</div>
+      </div>
+    </div>
+
+    <div class="menu-card">
+      <div class="menu-item" onclick="showToast('功能开发中，敬请期待')">
+        <div class="menu-icon" style="background:#e6f1fb;color:#378add;">&#9733;</div>
+        <div class="menu-text">选岗策略（即将上线）</div>
+        <span class="menu-badge">即将上线</span>
+        <span class="menu-arrow">&#8250;</span>
+      </div>
+      <div class="menu-item" onclick="showToast('功能开发中，敬请期待')">
+        <div class="menu-icon" style="background:#f0eeff;color:#9b8ec0;">&#9998;</div>
+        <div class="menu-text">笔面试备考（即将上线）</div>
+        <span class="menu-badge">即将上线</span>
+        <span class="menu-arrow">&#8250;</span>
+      </div>
+      <div class="menu-item" onclick="showToast('功能开发中，敬请期待')">
+        <div class="menu-icon" style="background:#faecda;color:#ba7517;">&#128276;</div>
+        <div class="menu-text">截止提醒订阅</div>
+        <span class="menu-arrow">&#8250;</span>
+      </div>
+      <div class="menu-item" onclick="showToast('功能开发中，敬请期待')">
+        <div class="menu-icon" style="background:#eaf3de;color:#639922;">&#128176;</div>
+        <div class="menu-text">升级会员</div>
+        <span class="menu-arrow">&#8250;</span>
+      </div>
+    </div>
+
+    <div class="brand-card">
+      <div class="brand-icon">公</div>
+      <div class="brand-name">生涯充电桩</div>
+      <div class="brand-slogan">银行校招资讯 · 每日更新</div>
+      <div class="brand-wechat">微信号：xiaozhu260601</div>
+    </div>
+
+    <div class="disclaimer">
+      <div class="disclaimer-title">免责声明</div>
+      <div class="disclaimer-text">本平台仅做公开信息聚合，所有招聘信息以银行官方公告为准。AI优化建议仅供参考，不构成任何承诺或担保。本平台与任何银行无隶属关系。</div>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal()"></div>
+<div class="modal" id="detailModal">
+  <div class="modal-header">
+    <h3 id="modalTitle">详情</h3>
+    <button class="modal-close" onclick="closeModal()">&#10005;</button>
+  </div>
+  <div class="modal-body" id="modalBody"></div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Tab Bar -->
+<div class="tab-bar">
+  <div class="tab-item active" onclick="switchTab('News', this)">
+    <span class="tab-icon">&#128240;</span>
+    <span class="tab-label">资讯</span>
+  </div>
+  <div class="tab-item" onclick="switchTab('Resume', this)">
+    <span class="tab-icon">&#128221;</span>
+    <span class="tab-label">简历</span>
+  </div>
+  <div class="tab-item" onclick="switchTab('My', this)">
+    <span class="tab-icon">&#128100;</span>
+    <span class="tab-label">我的</span>
+  </div>
+</div>
+
+<script>
+// ===== DATA =====
+let newsData = [];
+
+// ===== STATE =====
+let freeCount = parseInt(localStorage.getItem('aiFreeCount') || '3');
+let optimizedCount = parseInt(localStorage.getItem('aiOptimizedCount') || '0');
+let currentFilter = 'all';
+let hasUploadedFile = false;
+
+// ===== LOAD DATA =====
+async function loadData() {
+  const list = document.getElementById('newsList');
+  // Show loading skeletons
+  list.innerHTML = Array(4).fill('<div class="loading-skeleton"></div>').join('');
+
+  try {
+    // Try fetching from data.json (same directory), fallback to embedded data
+    const res = await fetch('data.json?t=' + Date.now());
+    if (res.ok) {
+      const json = await res.json();
+      newsData = json.news || [];
+      updateLastUpdated(json.lastUpdated);
+    } else {
+      throw new Error('fetch failed');
+    }
+  } catch (e) {
+    // Fallback: try the CloudStudio data endpoint
+    try {
+      const res2 = await fetch('https://83c04e28a69d47c085349ab64f1c4f57.app.codebuddy.work/data.json?t=' + Date.now());
+      if (res2.ok) {
+        const json = await res2.json();
+        newsData = json.news || [];
+        updateLastUpdated(json.lastUpdated);
+      } else {
+        throw new Error('fallback failed');
+      }
+    } catch (e2) {
+      // Use embedded fallback data
+      newsData = getEmbeddedData();
+      updateLastUpdated(null);
+    }
+  }
+
+  const urgentCount = newsData.filter(n => n.daysLeft !== null && n.daysLeft <= 4).length;
+  document.getElementById('urgentBadge').textContent = `${urgentCount}条即将截止`;
+  document.getElementById('statNews').textContent = newsData.length;
+
+  renderFilters();
+  renderNews();
+}
+
+function updateLastUpdated(timestamp) {
+  const el = document.getElementById('lastUpdateTime');
+  if (timestamp) {
+    const d = new Date(timestamp);
+    const h = d.getHours();
+    const m = String(d.getMinutes()).padStart(2, '0');
+    el.textContent = `${h}:${m} 已更新`;
+  } else {
+    el.textContent = '本地数据';
+  }
+}
+
+function getEmbeddedData() {
+  // Minimal fallback in case data.json is unreachable
+  return [
+    { bank: "中国工商银行", type: "国有大行", tag: "guoyou", title: "星令营暑期实习招聘", positions: "各机构综合实习岗位", target: "2027届本科及以上在校生", english: "各机构略有差异", major: "专业不限", deadline: "6月18日", daysLeft: 7, deadlineLevel: "soon", location: "全国43家境内机构", link: "https://job.icbc.com.cn" },
+    { bank: "中国建设银行", type: "国有大行", tag: "guoyou", title: "建习生暑期实习", positions: "职能/网点/金融科技实习生", target: "本科及以上在读", english: "各机构略有差异", major: "职能/网点不限", deadline: "6月22日 24:00", daysLeft: 11, deadlineLevel: "ok", location: "全国38家分支机构", link: "http://job.ccb.com" },
+  ];
+}
+
+// Auto-refresh when page becomes visible (user returns to tab)
+document.addEventListener('visibilitychange', function() {
+  if (!document.hidden) {
+    // Check if data is stale (> 30 min since last load)
+    loadData();
+  }
+});
+
+// ===== INIT =====
+function init() {
+  const now = new Date();
+  const weekDays = ['日','一','二','三','四','五','六'];
+  document.getElementById('todayDate').textContent = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} 周${weekDays[now.getDay()]}`;
+
+  document.getElementById('freeCount').textContent = freeCount;
+  document.getElementById('statFree').textContent = freeCount;
+  document.getElementById('statOptimized').textContent = optimizedCount;
+
+  loadData();
+}
+
+// ===== TABS =====
+function switchTab(name, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+  document.getElementById('page' + name).classList.add('active');
+  el.classList.add('active');
+}
+
+// ===== FILTERS =====
+function renderFilters() {
+  const filters = [
+    { key: 'all', label: '全部', color: '' },
+    { key: 'zhengce', label: '政策行', color: '#8b7db5' },
+    { key: 'guoyou', label: '国有大行', color: '#6b8eb2' },
+    { key: 'gufenzhi', label: '股份制', color: '#7ba88a' },
+    { key: 'chengshang', label: '城商行', color: '#9b8ec0' },
+    { key: 'nongshang', label: '农商行', color: '#7ba89a' },
+    { key: 'nongxin', label: '农信社', color: '#8aab7b' },
+    { key: 'cunzhen', label: '村镇银行', color: '#c4956a' },
+    { key: 'waizi', label: '外资行', color: '#b5888e' },
+    { key: 'urgent', label: '即将截止', color: '#c2756e' },
+  ];
+  const bar = document.getElementById('filterBar');
+  bar.innerHTML = filters.map(f => `
+    <button class="filter-btn ${currentFilter === f.key ? 'active' : ''}" onclick="setFilter('${f.key}')">
+      ${f.color ? `<span class="dot" style="background:${f.color}"></span>` : ''}${f.label}
+    </button>
+  `).join('');
+}
+
+function setFilter(key) {
+  currentFilter = key;
+  renderFilters();
+  renderNews();
+}
+
+// ===== NEWS LIST =====
+function renderNews() {
+  let data = newsData;
+  if (currentFilter === 'urgent') {
+    data = data.filter(n => n.daysLeft !== null && n.daysLeft <= 4);
+  } else if (currentFilter !== 'all') {
+    data = data.filter(n => n.tag === currentFilter);
+  }
+
+  const list = document.getElementById('newsList');
+  if (data.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">&#128269;</div><p>暂无该分类的资讯</p></div>';
+    return;
+  }
+
+  list.innerHTML = data.map((n, i) => {
+    const tagClass = 'tag-' + n.tag;
+    const deadlineClass = 'deadline-' + n.deadlineLevel;
+    const daysText = n.daysLeft !== null ? (n.daysLeft <= 2 ? '仅剩' + n.daysLeft + '天' : '剩' + n.daysLeft + '天') : '';
+    return `
+    <div class="news-card fade-in" style="animation-delay:${i * 0.05}s" onclick="showDetail(${newsData.indexOf(n)})">
+      <div class="news-card-header">
+        <span class="news-tag ${tagClass}">${n.type}</span>
+        <span class="news-bank">${n.bank}${n.hot ? ' &#128293;' : ''}</span>
+        <span class="news-deadline ${deadlineClass}">${daysText || '报名中'}</span>
+      </div>
+      <div class="news-info">
+        <span class="news-info-item">&#128188; <span>${n.positions.substring(0, 16)}${n.positions.length > 16 ? '...' : ''}</span></span>
+        ${n.count ? `<span class="news-info-item">&#128202; <span>${n.count}</span></span>` : ''}
+      </div>
+      <div class="news-meta">
+        <span class="news-location">&#128205; ${n.location.substring(0, 12)}${n.location.length > 12 ? '...' : ''}</span>
+        <span class="news-link-btn">查看详情 &#8250;</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===== DETAIL MODAL =====
+function showDetail(idx) {
+  const n = newsData[idx];
+  const tagClass = 'tag-' + n.tag;
+  const deadlineClass = 'deadline-' + n.deadlineLevel;
+  const daysText = n.daysLeft !== null ? (n.daysLeft <= 2 ? '仅剩' + n.daysLeft + '天!' : '剩' + n.daysLeft + '天') : '报名中';
+
+  document.getElementById('modalTitle').innerHTML = `<span class="news-tag ${tagClass}" style="font-size:12px">${n.type}</span> ${n.bank}`;
+
+  let body = `
+    <div style="margin-bottom:14px;font-size:15px;font-weight:500;">${n.title}</div>
+    <div class="detail-row"><span class="detail-label">招聘岗位</span><span class="detail-value">${n.positions}</span></div>
+    <div class="detail-row"><span class="detail-label">招聘对象</span><span class="detail-value">${n.target}</span></div>
+    <div class="detail-row"><span class="detail-label">英语要求</span><span class="detail-value">${n.english}</span></div>
+    <div class="detail-row"><span class="detail-label">专业要求</span><span class="detail-value">${n.major}</span></div>
+    <div class="detail-row"><span class="detail-label">截止日期</span><span class="detail-value"><span class="news-deadline ${deadlineClass}" style="display:inline-block">${daysText}</span> ${n.deadline}</span></div>
+    <div class="detail-row"><span class="detail-label">工作地点</span><span class="detail-value">${n.location}</span></div>
+    ${n.count ? `<div class="detail-row"><span class="detail-label">招聘人数</span><span class="detail-value">${n.count}</span></div>` : ''}
+    ${n.note ? `<div class="detail-row"><span class="detail-label">备注</span><span class="detail-value">${n.note}</span></div>` : ''}
+  `;
+
+  if (n.link) {
+    body += `<a class="detail-link" href="${n.link}" target="_blank">查看官方报名地址</a>`;
+  } else if (n.note && n.note.includes('邮箱')) {
+    body += `<div class="detail-link" style="background:#7ba88a" onclick="showToast('请通过邮箱投递，详见备注')">邮箱投递（见备注）</div>`;
+  } else {
+    body += `<div class="detail-link" style="background:var(--text-hint)" onclick="showToast('请关注官方渠道获取报名方式')">关注官方渠道报名</div>`;
+  }
+
+  document.getElementById('modalBody').innerHTML = body;
+  document.getElementById('modalOverlay').classList.add('show');
+  document.getElementById('detailModal').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('show');
+  document.getElementById('detailModal').classList.remove('show');
+}
+
+// ===== FILE UPLOAD =====
+function handleFileUpload(input) {
+  if (input.files && input.files[0]) {
+    const file = input.files[0];
+    if (file.size > 2 * 1024 * 1024) {
+      showToast('文件大小超过2MB，请压缩后重试');
+      return;
+    }
+    hasUploadedFile = true;
+    const nameEl = document.getElementById('uploadedFileName');
+    nameEl.innerHTML = '&#128196; ' + file.name;
+    document.getElementById('uploadedFileInfo').style.display = 'flex';
+    document.getElementById('uploadArea').innerHTML = '<div class="upload-icon">&#9989;</div><div class="upload-text">已上传，点击更换</div><div class="upload-hint">支持 PDF / Word，2MB 以内</div>';
+    updateOptionalTags();
+    showToast('简历上传成功');
+  }
+}
+
+function deleteUploadedFile() {
+  hasUploadedFile = false;
+  document.getElementById('resumeFile').value = '';
+  document.getElementById('uploadedFileInfo').style.display = 'none';
+  document.getElementById('uploadArea').innerHTML = '<div class="upload-icon">&#128196;</div><div class="upload-text">点击上传简历文件</div><div class="upload-hint">支持 PDF / Word，2MB 以内</div>';
+  updateOptionalTags();
+  showToast('已删除简历文件');
+}
+
+function updateOptionalTags() {
+  const tags = ['tagBasic', 'tagEdu', 'tagIntern', 'tagSkills', 'tagTarget'];
+  tags.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = hasUploadedFile ? 'inline-block' : 'none';
+  });
+}
+
+// ===== AI OPTIMIZE =====
+function startAIOptimize() {
+  if (freeCount <= 0) {
+    showToast('今日免费次数已用完，升级会员获取更多');
+    return;
+  }
+
+  const name = document.getElementById('rName').value;
+  const school = document.getElementById('rSchool').value;
+
+  // If no uploaded file, require at least name and school
+  if (!hasUploadedFile && !name && !school) {
+    showToast('请上传简历或至少填写姓名和学校');
+    return;
+  }
+
+  const btn = document.getElementById('aiOptimizeBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading">&#9203;</span> AI 分析中...';
+
+  setTimeout(() => {
+    freeCount--;
+    optimizedCount++;
+    localStorage.setItem('aiFreeCount', freeCount);
+    localStorage.setItem('aiOptimizedCount', optimizedCount);
+
+    document.getElementById('freeCount').textContent = freeCount;
+    document.getElementById('statFree').textContent = freeCount;
+    document.getElementById('statOptimized').textContent = optimizedCount;
+
+    btn.disabled = false;
+    btn.innerHTML = '&#10024; 开始优化';
+
+    generateAIResult();
+  }, 2000);
+}
+
+function generateAIResult() {
+  const name = document.getElementById('rName').value || (hasUploadedFile ? '同学' : '同学');
+  const school = document.getElementById('rSchool').value || '';
+  const degree = document.getElementById('rDegree').value || '';
+  const major = document.getElementById('rMajor').value || '';
+  const english = document.getElementById('rEnglish').value || '';
+  const internDesc = document.getElementById('rInternDesc').value || '';
+  const skills = document.getElementById('rSkills').value || '';
+  const certs = document.getElementById('rCerts').value || '';
+  const targetPos = document.getElementById('rTargetPos').value || '';
+  const targetCity = document.getElementById('rTargetCity').value || '';
+  const bankType = document.getElementById('rBankType').value || '';
+
+  let score = hasUploadedFile ? 70 : 60;
+  let issues = [];
+  let goods = [];
+
+  // If file uploaded, acknowledge it
+  if (hasUploadedFile) {
+    goods.push({ title: '已上传简历文件', text: 'AI 将基于你上传的简历进行深度分析，以下为补充建议。如果你还在补充表单信息，填写越多建议越精准。' });
+  }
+
+  // Score calculation
+  if (school) score += 5;
+  if (degree) score += 5;
+  if (major) score += 3;
+  if (english) { score += 5; goods.push({ title: '英语水平已标注', text: `${english}是银行校招的基本门槛，明确标注有助于HR快速筛选通过。` }); }
+  else if (!hasUploadedFile) { issues.push({ title: '英语水平未标注', text: '大部分银行校招要求CET-4及以上，建议标注具体成绩。如CET-4 500+会比简单写"通过CET-4"更有说服力。' }); }
+  else { issues.push({ title: '建议在简历中突出英语水平', text: '大部分银行校招要求CET-4及以上，建议在简历中明确标注具体成绩和级别。' }); }
+  if (internDesc) { score += 8; goods.push({ title: '有实习经历描述', text: '实习经历是银行校招最重要的加分项之一，建议用STAR法则（情境-任务-行动-结果）进一步优化。' }); }
+  else if (!hasUploadedFile) { issues.push({ title: '缺少实习经历描述', text: '银行校招非常看重实习经历，即使是非银行实习也比空白强。建议补充任何与金融、服务、团队协作相关的经历。' }); score -= 5; }
+  if (skills) score += 4;
+  else if (!hasUploadedFile) { issues.push({ title: '专业技能未填写', text: '建议补充Excel、Python等数据分析技能，以及与银行业务相关的专业技能。银行越来越重视数字化能力。' }); }
+  if (certs) { score += 3; goods.push({ title: '有证书/荣誉', text: '证书和荣誉能有效提升简历含金量，特别是银行从业资格证等专业证书。' }); }
+  if (targetPos) score += 3;
+  else { issues.push({ title: '求职意向不明确', text: '明确的求职意向让HR觉得你有目标感。建议至少填写意向岗位和城市，最好与目标银行的在招岗位匹配。' }); }
+  if (targetCity) score += 2;
+  if (bankType) score += 2;
+
+  // General advice
+  if (internDesc && internDesc.length < 30) { issues.push({ title: '实习描述过于简短', text: '建议用2-3句话描述每段实习，包含：做了什么（行动）+ 产出了什么（数据/结果）。例如："独立完成50+客户需求分析，促成3笔贷款业务签约，涉及金额XXX万"。' }); }
+  if (degree === '本科' && !certs && !hasUploadedFile) { issues.push({ title: '本科学历建议增加差异化优势', text: '本科竞争激烈，建议考取银行从业资格证、证券从业资格等证书，或参加金融类竞赛提升简历竞争力。' }); }
+
+  score = Math.min(95, Math.max(35, score));
+  const scoreLevel = score >= 80 ? '优秀' : score >= 60 ? '良好' : '待提升';
+
+  let html = `
+    <div style="font-size:13px;color:var(--text-hint);margin-bottom:12px;">
+      ${name}的简历综合评分：<strong style="font-size:20px;color:${score >= 80 ? '#639922' : score >= 60 ? '#378add' : '#c2756e'}">${score}</strong>/100 · ${scoreLevel}
+    </div>
+  `;
+
+  issues.forEach(item => {
+    html += `<div class="ai-result-item issue"><div class="ai-result-item-title">&#9888; ${item.title}</div><div class="ai-result-item-text">${item.text}</div></div>`;
+  });
+
+  goods.forEach(item => {
+    html += `<div class="ai-result-item good"><div class="ai-result-item-title">&#10003; ${item.title}</div><div class="ai-result-item-text">${item.text}</div></div>`;
+  });
+
+  // Always add 1-2 strategic suggestions
+  const suggestions = [
+    { title: '简历投递策略', text: '建议同时投递3-5家银行：1-2家冲刺行（国有大行）+ 2-3家稳妥行（股份制/城商行）。' + (bankType ? `你偏好${bankType}，可以重点关注意向类型的在招岗位。` : '') + (targetCity ? `关注${targetCity}地区近期截止的岗位。` : '明确意向城市后可以进一步精准推荐。') },
+    { title: '面试准备方向', text: '银行校招面试常见题型：自我介绍、为什么选我们行、对岗位的理解、情景模拟题。' + (targetPos ? `针对${targetPos}岗，建议重点准备业务场景题。` : '') }
+  ];
+  suggestions.forEach(s => {
+    html += `<div class="ai-result-item"><div class="ai-result-item-title">&#128161; ${s.title}</div><div class="ai-result-item-text">${s.text}</div></div>`;
+  });
+
+  document.getElementById('aiResultContent').innerHTML = html;
+  document.getElementById('aiResult').classList.add('show');
+  document.getElementById('aiResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  showToast('AI 分析完成');
+}
+
+// ===== TOAST =====
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ===== START =====
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>银行校招日报 · 卡片生成器</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif; background: #f5f4f0; color: #2c2c2a; min-height: 100vh; }
+
+  .app { display: flex; min-height: 100vh; }
+  @media (max-width: 900px) { .app { flex-direction: column; } }
+
+  .editor { width: 420px; padding: 32px 24px; overflow-y: auto; background: #fff; border-right: 1px solid #e8e6df; }
+  @media (max-width: 900px) { .editor { width: 100%; border-right: none; border-bottom: 1px solid #e8e6df; } }
+
+  .editor h1 { font-size: 18px; font-weight: 500; margin-bottom: 24px; }
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 12px; color: #888780; margin-bottom: 4px; font-weight: 500; }
+  .field input, .field textarea, .field select {
+    width: 100%; padding: 8px 12px; border: 1px solid #d3d1c7; border-radius: 6px;
+    font-size: 14px; font-family: inherit; color: #2c2c2a; background: #fafaf8;
+  }
+  .field textarea { resize: vertical; min-height: 60px; }
+  .field input:focus, .field textarea:focus { outline: none; border-color: #378add; }
+
+  .bank-card-editor { background: #fafaf8; border: 1px solid #e8e6df; border-radius: 8px; padding: 16px; margin-bottom: 12px; position: relative; }
+  .bank-card-editor h3 { font-size: 14px; font-weight: 500; margin-bottom: 12px; }
+  .remove-btn { position: absolute; top: 8px; right: 8px; background: none; border: none; color: #a32d2d; cursor: pointer; font-size: 12px; padding: 4px 8px; border-radius: 4px; }
+  .remove-btn:hover { background: #fcebeb; }
+
+  .add-btn { width: 100%; padding: 10px; background: #e6f1fb; border: 1px dashed #85b7eb; border-radius: 8px; color: #185fa5; cursor: pointer; font-size: 14px; font-family: inherit; margin-bottom: 24px; }
+  .add-btn:hover { background: #b5d4f4; }
+
+  .export-btn { width: 100%; padding: 14px; background: #2c2c2a; border: none; border-radius: 8px; color: #fff; cursor: pointer; font-size: 15px; font-weight: 500; font-family: inherit; }
+  .export-btn:hover { background: #444441; }
+
+  .preview-area { flex: 1; display: flex; align-items: center; justify-content: center; padding: 32px; overflow-y: auto; }
+
+  .card-wrapper { width: 375px; }
+
+  .card {
+    width: 375px; background: #fafaf8; border-radius: 16px; overflow: hidden;
+    font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+  }
+  .card-accent { height: 5px; background: #378add; }
+  .card-header { padding: 28px 24px 0; }
+  .card-date { font-size: 12px; color: #888780; margin-bottom: 4px; }
+  .card-title { font-size: 22px; font-weight: 500; color: #2c2c2a; margin-bottom: 4px; }
+  .card-subtitle { font-size: 12px; color: #888780; }
+  .card-divider { height: 1px; background: #d3d1c7; margin: 16px 24px; }
+
+  .bank-item {
+    margin: 0 16px 12px; padding: 16px; background: #fff; border: 1px solid #e8e6df; border-radius: 10px;
+  }
+  .bank-item-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .bank-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 500; }
+  .tag-state { background: #e6f1fb; color: #185fa5; }
+  .tag-stock { background: #eaf3de; color: #3b6d11; }
+  .tag-city { background: #eef0fe; color: #534ab7; }
+  .tag-village { background: #faecda; color: #854f0b; }
+  .deadline-tag { padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 500; }
+  .deadline-urgent { background: #fcebeb; color: #a32d2d; }
+  .deadline-normal { background: #faeeda; color: #854f0b; }
+  .deadline-long { background: #eaf3de; color: #3b6d11; }
+
+  .bank-name { font-size: 14px; font-weight: 500; color: #2c2c2a; margin-bottom: 8px; line-height: 1.5; }
+  .info-row { display: flex; margin-bottom: 4px; font-size: 12px; line-height: 1.6; }
+  .info-label { color: #888780; width: 56px; flex-shrink: 0; }
+  .info-value { color: #2c2c2a; flex: 1; }
+
+  .card-footer { padding: 12px 24px 20px; text-align: center; }
+  .card-footer-line { height: 1px; background: #d3d1c7; margin-bottom: 12px; }
+  .card-footer-text { font-size: 11px; color: #b4b2a9; }
+  .card-link-hint { font-size: 11px; color: #378add; margin-top: 6px; }
+
+  .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #2c2c2a; color: #fff; padding: 12px 24px; border-radius: 8px; font-size: 14px; z-index: 999; opacity: 0; transition: opacity 0.3s; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="editor">
+    <h1>方案一：简单卡片生成器</h1>
+    <p style="font-size:12px;color:#888780;margin-bottom:20px;">编辑内容 → 实时预览 → 导出图片 → 朋友圈文案里贴短链接</p>
+
+    <div class="field">
+      <label>日期</label>
+      <input type="text" id="cardDate" value="2026.06.10 周三">
+    </div>
+    <div class="field">
+      <label>标题</label>
+      <input type="text" id="cardTitle" value="银行校招日报">
+    </div>
+    <div class="field">
+      <label>副标题</label>
+      <input type="text" id="cardSubtitle" value="今日 3 家银行更新">
+    </div>
+    <div class="field">
+      <label>底部提示文案（如短链接）</label>
+      <input type="text" id="cardLink" value="长按保存 · 详情见评论区链接" placeholder="在卡片底部显示的提示文字">
+    </div>
+
+    <div id="bankEditors"></div>
+    <button class="add-btn" onclick="addBank()">+ 添加银行</button>
+
+    <button class="export-btn" onclick="exportCard()">导出卡片图片</button>
+  </div>
+
+  <div class="preview-area">
+    <div class="card-wrapper">
+      <div id="cardPreview" class="card">
+        <div class="card-accent"></div>
+        <div class="card-header">
+          <div class="card-date" id="prevDate"></div>
+          <div class="card-title" id="prevTitle"></div>
+          <div class="card-subtitle" id="prevSubtitle"></div>
+        </div>
+        <div class="card-divider"></div>
+        <div id="prevBanks"></div>
+        <div class="card-footer">
+          <div class="card-footer-line"></div>
+          <div class="card-footer-text">银行校招日报 · 每日更新</div>
+          <div class="card-link-hint" id="prevLink"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const defaultBanks = [
+  {
+    name: '2026 年【广发银行】暑期实习生招聘',
+    type: 'stock',
+    deadline: '6月25日截止',
+    deadlineLevel: 'normal',
+    positions: '总部及分支机构丰富岗位',
+    target: '2027届境内外高校应届毕业生',
+    major: '详见各岗位具体要求',
+    location: '全国30+城市（北京/上海/广州/深圳/杭州等）',
+    url: 'https://www.chinalife.com.cn/chinalife/zhaopin'
+  },
+  {
+    name: '2026 年【济宁银行】招聘公告（山东·107人）',
+    type: 'city',
+    deadline: '6月17日截止',
+    deadlineLevel: 'urgent',
+    positions: '总行管培生 / 金融科技岗 / 综合柜员',
+    target: '2026届及择业期内未就业毕业生',
+    major: '经济金融/数理统计/信息科技类',
+    location: '济宁/菏泽/枣庄/淄博/泰安/临沂等8城',
+    url: 'https://url.jiuyejie.cn/jn/jnbank.php'
+  },
+  {
+    name: '2026 年【民生银行】上海分行暑期实习',
+    type: 'stock',
+    deadline: '6月30日截止',
+    deadlineLevel: 'long',
+    positions: '暑期实习生（重点业务领域跟岗）',
+    target: '全日制本科及以上学历在校学生',
+    major: 'STEM或"STEM+金融"交叉背景优先',
+    location: '上海',
+    url: 'http://career.cmbc.com.cn:8080/index.jsp#/app/recruitment/trainee'
+  }
+];
+
+let banks = [...defaultBanks];
+const typeLabels = { state: '国有大行', stock: '股份制', city: '城商行', village: '村镇银行' };
+const typeClasses = { state: 'tag-state', stock: 'tag-stock', city: 'tag-city', village: 'tag-village' };
+
+function renderEditors() {
+  const container = document.getElementById('bankEditors');
+  container.innerHTML = banks.map((b, i) => `
+    <div class="bank-card-editor">
+      <button class="remove-btn" onclick="removeBank(${i})">删除</button>
+      <h3>银行 ${i + 1}</h3>
+      <div class="field"><label>银行名称</label><input value="${b.name}" oninput="banks[${i}].name=this.value;render()"></div>
+      <div style="display:flex;gap:8px;">
+        <div class="field" style="flex:1;"><label>类型</label>
+          <select onchange="banks[${i}].type=this.value;render()">
+            <option value="state" ${b.type==='state'?'selected':''}>国有大行</option>
+            <option value="stock" ${b.type==='stock'?'selected':''}>股份制</option>
+            <option value="city" ${b.type==='city'?'selected':''}>城商行</option>
+            <option value="village" ${b.type==='village'?'selected':''}>村镇银行</option>
+          </select>
+        </div>
+        <div class="field" style="flex:1;"><label>截止日期</label><input value="${b.deadline}" oninput="banks[${i}].deadline=this.value;render()"></div>
+        <div class="field" style="flex:1;"><label>紧迫度</label>
+          <select onchange="banks[${i}].deadlineLevel=this.value;render()">
+            <option value="urgent" ${b.deadlineLevel==='urgent'?'selected':''}>紧急</option>
+            <option value="normal" ${b.deadlineLevel==='normal'?'selected':''}>一般</option>
+            <option value="long" ${b.deadlineLevel==='long'?'selected':''}>充裕</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>招聘岗位</label><input value="${b.positions}" oninput="banks[${i}].positions=this.value;render()"></div>
+      <div class="field"><label>招聘对象</label><input value="${b.target}" oninput="banks[${i}].target=this.value;render()"></div>
+      <div class="field"><label>专业要求</label><input value="${b.major}" oninput="banks[${i}].major=this.value;render()"></div>
+      <div class="field"><label>工作地点</label><input value="${b.location}" oninput="banks[${i}].location=this.value;render()"></div>
+      <div class="field"><label>官方报名链接</label><input value="${b.url}" oninput="banks[${i}].url=this.value;render()"></div>
+    </div>
+  `).join('');
+}
+
+function render() {
+  document.getElementById('prevDate').textContent = document.getElementById('cardDate').value;
+  document.getElementById('prevTitle').textContent = document.getElementById('cardTitle').value;
+  document.getElementById('prevSubtitle').textContent = document.getElementById('cardSubtitle').value;
+  document.getElementById('prevLink').textContent = document.getElementById('cardLink').value;
+
+  const deadlineClasses = { urgent: 'deadline-urgent', normal: 'deadline-normal', long: 'deadline-long' };
+  document.getElementById('prevBanks').innerHTML = banks.map(b => `
+    <div class="bank-item">
+      <div class="bank-item-header">
+        <span class="bank-tag ${typeClasses[b.type] || 'tag-city'}">${typeLabels[b.type] || '城商行'}</span>
+        <span class="deadline-tag ${deadlineClasses[b.deadlineLevel] || 'deadline-normal'}">${b.deadline}</span>
+      </div>
+      <div class="bank-name">${b.name}</div>
+      <div class="info-row"><span class="info-label">岗位</span><span class="info-value">${b.positions}</span></div>
+      <div class="info-row"><span class="info-label">对象</span><span class="info-value">${b.target}</span></div>
+      <div class="info-row"><span class="info-label">专业</span><span class="info-value">${b.major}</span></div>
+      <div class="info-row"><span class="info-label">地点</span><span class="info-value">${b.location}</span></div>
+    </div>
+  `).join('');
+}
+
+function addBank() {
+  banks.push({ name: '', type: 'city', deadline: '', deadlineLevel: 'normal', positions: '', target: '', major: '', location: '', url: '' });
+  renderEditors();
+  render();
+}
+
+function removeBank(i) {
+  banks.splice(i, 1);
+  renderEditors();
+  render();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+async function exportCard() {
+  const el = document.getElementById('cardPreview');
+  try {
+    const canvas = await html2canvas(el, { scale: 3, useCORS: true, backgroundColor: '#fafaf8' });
+    const link = document.createElement('a');
+    link.download = '银行校招日报_' + new Date().toISOString().slice(0, 10) + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    showToast('卡片已导出！');
+  } catch (e) {
+    showToast('导出失败，请重试');
+    console.error(e);
+  }
+}
+
+document.getElementById('cardDate').addEventListener('input', render);
+document.getElementById('cardTitle').addEventListener('input', render);
+document.getElementById('cardSubtitle').addEventListener('input', render);
+document.getElementById('cardLink').addEventListener('input', render);
+
+renderEditors();
+render();
+</script>
+</body>
+</html>

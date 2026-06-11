@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>银行校招日报 · 详情</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif; background: #f5f4f0; color: #2c2c2a; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+
+  .page { max-width: 420px; margin: 0 auto; padding: 0 0 40px; }
+
+  .header { background: linear-gradient(135deg, #378add 0%, #5d9ce8 100%); padding: 32px 24px 28px; color: #fff; }
+  .header-date { font-size: 12px; opacity: 0.8; margin-bottom: 4px; }
+  .header-title { font-size: 24px; font-weight: 500; margin-bottom: 4px; }
+  .header-sub { font-size: 13px; opacity: 0.85; }
+
+  .countdown-bar { display: flex; gap: 8px; padding: 12px 16px; background: #fff; border-bottom: 1px solid #e8e6df; overflow-x: auto; }
+  .countdown-item { flex-shrink: 0; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 500; }
+  .cd-urgent { background: #fcebeb; color: #a32d2d; }
+  .cd-warning { background: #faeeda; color: #854f0b; }
+  .cd-normal { background: #eaf3de; color: #3b6d11; }
+
+  .section-title { font-size: 14px; font-weight: 500; padding: 20px 20px 12px; color: #5f5e5a; }
+
+  .bank-card {
+    margin: 0 16px 12px; padding: 20px; background: #fff; border-radius: 12px;
+    border: 1px solid #e8e6df; transition: transform 0.15s;
+  }
+  .bank-card:active { transform: scale(0.99); }
+  .bank-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .bank-tag { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+  .tag-state { background: #e6f1fb; color: #185fa5; }
+  .tag-stock { background: #eaf3de; color: #3b6d11; }
+  .tag-city { background: #eef0fe; color: #534ab7; }
+  .tag-village { background: #faecda; color: #854f0b; }
+  .deadline-tag { padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+  .dl-urgent { background: #fcebeb; color: #a32d2d; }
+  .dl-normal { background: #faeeda; color: #854f0b; }
+  .dl-long { background: #eaf3de; color: #3b6d11; }
+
+  .bank-name { font-size: 16px; font-weight: 500; color: #2c2c2a; margin-bottom: 12px; line-height: 1.5; }
+  .info-grid { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 13px; line-height: 1.7; }
+  .info-label { color: #888780; white-space: nowrap; }
+  .info-value { color: #2c2c2a; }
+
+  .apply-btn {
+    display: block; width: 100%; margin-top: 16px; padding: 12px; text-align: center;
+    background: #378add; color: #fff; border: none; border-radius: 8px; font-size: 14px;
+    font-weight: 500; font-family: inherit; cursor: pointer; text-decoration: none;
+    transition: background 0.15s;
+  }
+  .apply-btn:active { background: #185fa5; }
+  .apply-btn:visited { color: #fff; }
+
+  .footer { text-align: center; padding: 24px 20px; font-size: 11px; color: #b4b2a9; }
+  .footer a { color: #378add; text-decoration: none; }
+  .footer-contact { margin-top: 12px; padding: 14px 16px; background: #fff; border-radius: 10px; display: inline-block; text-align: left; }
+  .footer-contact-row { font-size: 13px; color: #2c2c2a; margin-bottom: 6px; line-height: 1.6; }
+  .footer-contact-row:last-child { margin-bottom: 0; }
+  .footer-contact-icon { display: inline-block; width: 16px; height: 16px; border-radius: 3px; background: #378add; color: #fff; font-size: 9px; line-height: 16px; text-align: center; vertical-align: middle; margin-right: 6px; font-weight: 500; }
+  .footer-contact-label { color: #888780; font-size: 11px; }
+
+  .hot-tip { margin: 0 16px 12px; padding: 14px 16px; background: #fff7e6; border: 1px solid #fac775; border-radius: 10px; font-size: 13px; line-height: 1.7; color: #633806; }
+  .hot-tip-title { font-weight: 500; color: #854f0b; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+
+<div class="page" id="app">
+  <div class="header">
+    <div class="header-date" id="hDate"></div>
+    <div class="header-title" id="hTitle"></div>
+    <div class="header-sub" id="hSub"></div>
+  </div>
+
+  <div class="countdown-bar" id="countdownBar"></div>
+
+  <div id="hotTips"></div>
+  <div id="bankList"></div>
+
+  <div class="footer">
+    <div class="footer-contact">
+      <div class="footer-contact-row"><span class="footer-contact-icon">公</span><span class="footer-contact-label">公众号</span> 生涯充电桩</div>
+      <div class="footer-contact-row"><span class="footer-contact-icon">微</span><span class="footer-contact-label">微信号</span> xiaozhu260601</div>
+    </div>
+    <div style="margin-top:14px;">银行校招日报 · 每日更新<br>
+    <span style="margin-top:4px;display:inline-block;">数据截止 <span id="footerTime"></span></span></div>
+  </div>
+</div>
+
+<script>
+const defaultData = {
+  date: '2026.06.10 周三',
+  title: '银行校招日报',
+  subtitle: '今日 3 家银行更新',
+  updateTime: '2026年6月10日 10:30',
+  countdowns: [
+    { text: '2天 齐鲁村镇×4', level: 'urgent' },
+    { text: '4天 交行江苏/南京Blueπ', level: 'warning' },
+    { text: '7天 济宁银行107人', level: 'normal' },
+    { text: '8天 工行星令营', level: 'normal' }
+  ],
+  hotTips: [
+    '广发银行全国30+城市暑期实习全面启动！',
+    '济宁银行107人大型招聘，6月17日截止！',
+    '齐鲁村镇银行4家明后天截止，仅剩48小时！'
+  ],
+  banks: [
+    {
+      name: '2026 年【广发银行】暑期实习生招聘',
+      type: 'stock', deadline: '6月25日截止', deadlineLevel: 'normal',
+      positions: '总部及分支机构丰富岗位',
+      target: '2027届境内外高校应届毕业生',
+      english: '详见各岗位具体要求',
+      major: '详见各岗位具体要求',
+      location: '全国30+城市（北京/上海/广州/深圳/杭州/南京/成都等）',
+      note: '每人可投2个志愿，每个机构限1个岗位',
+      url: 'https://www.chinalife.com.cn/chinalife/zhaopin'
+    },
+    {
+      name: '2026 年【济宁银行】招聘公告（山东·107人）',
+      type: 'city', deadline: '6月17日截止', deadlineLevel: 'urgent',
+      positions: '总行管培生 / 金融科技岗 / 综合柜员',
+      target: '2026届及择业期内未就业毕业生',
+      english: '详见公告',
+      major: '经济金融/数理统计/信息科技类',
+      location: '济宁/菏泽/枣庄/淄博/泰安/临沂/日照/济南',
+      note: '笔试行测+论述各占50%，综合=笔试40%+面试60%',
+      url: 'https://url.jiuyejie.cn/jn/jnbank.php'
+    },
+    {
+      name: '2026 年【民生银行】上海分行暑期实习',
+      type: 'stock', deadline: '6月30日截止', deadlineLevel: 'long',
+      positions: '暑期实习生（重点业务领域跟岗）',
+      target: '全日制本科及以上学历在校学生',
+      english: '详见公告',
+      major: 'STEM或"STEM+金融"交叉背景优先',
+      location: '上海',
+      note: '实习优异者优先留用，CFA/CPA持证者优先',
+      url: 'http://career.cmbc.com.cn:8080/index.jsp#/app/recruitment/trainee'
+    }
+  ]
+};
+
+function loadData() {
+  try {
+    const hash = decodeURIComponent(window.location.hash.slice(1));
+    if (hash) return JSON.parse(hash);
+  } catch (e) {}
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const d = params.get('d');
+    if (d) return JSON.parse(atob(d));
+  } catch (e) {}
+  return defaultData;
+}
+
+function render() {
+  const data = loadData();
+  const typeLabels = { state: '国有大行', stock: '股份制', city: '城商行', village: '村镇银行' };
+  const typeClasses = { state: 'tag-state', stock: 'tag-stock', city: 'tag-city', village: 'tag-village' };
+  const dlClasses = { urgent: 'dl-urgent', normal: 'dl-normal', long: 'dl-long' };
+  const cdClasses = { urgent: 'cd-urgent', warning: 'cd-warning', normal: 'cd-normal' };
+
+  document.getElementById('hDate').textContent = data.date;
+  document.getElementById('hTitle').textContent = data.title;
+  document.getElementById('hSub').textContent = data.subtitle;
+  document.getElementById('footerTime').textContent = data.updateTime;
+
+  if (data.countdowns && data.countdowns.length) {
+    document.getElementById('countdownBar').innerHTML = data.countdowns.map(c =>
+      `<span class="countdown-item ${cdClasses[c.level] || 'cd-normal'}">${c.text}</span>`
+    ).join('');
+  }
+
+  if (data.hotTips && data.hotTips.length) {
+    document.getElementById('hotTips').innerHTML = data.hotTips.map(t =>
+      `<div class="hot-tip"><div class="hot-tip-title">今日关注</div>${t}</div>`
+    ).join('');
+  }
+
+  document.getElementById('bankList').innerHTML = (data.banks || []).map(b => `
+    <div class="bank-card">
+      <div class="bank-card-header">
+        <span class="bank-tag ${typeClasses[b.type] || 'tag-city'}">${typeLabels[b.type] || '城商行'}</span>
+        <span class="deadline-tag ${dlClasses[b.deadlineLevel] || 'dl-normal'}">${b.deadline}</span>
+      </div>
+      <div class="bank-name">${b.name}</div>
+      <div class="info-grid">
+        <span class="info-label">岗位</span><span class="info-value">${b.positions}</span>
+        <span class="info-label">对象</span><span class="info-value">${b.target}</span>
+        <span class="info-label">英语</span><span class="info-value">${b.english || '详见公告'}</span>
+        <span class="info-label">专业</span><span class="info-value">${b.major}</span>
+        <span class="info-label">地点</span><span class="info-value">${b.location}</span>
+        ${b.note ? `<span class="info-label">备注</span><span class="info-value">${b.note}</span>` : ''}
+      </div>
+      ${b.url ? `<a class="apply-btn" href="${b.url}" target="_blank" rel="noopener">查看官方报名地址</a>` : ''}
+    </div>
+  `).join('');
+}
+
+render();
+</script>
+</body>
+</html>
